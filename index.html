@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=__APP_VERSION__">
 </head>
 <body>
   <div id="stage">
@@ -42,6 +42,9 @@
       <!-- 見送り成功テキスト -->
       <div id="bless" class="bless"></div>
 
+      <!-- ビンゴ演出 -->
+      <div id="bingoFx" class="bingo-fx"><span class="bingo-fx-text">ビンゴ！</span></div>
+
       <!-- 下部操作パネル -->
       <div class="controls">
         <img class="monk" src="assets/monk_back_1.png" alt="僧侶">
@@ -60,6 +63,9 @@
       <!-- ダメージ時ヴィネット -->
       <div id="vignette" class="vignette"></div>
     </div>
+
+    <!-- バージョン表示 (デプロイ毎に自動採番) -->
+    <div id="versionTag" class="version-tag"></div>
 
     <!-- スタート画面 -->
     <div id="startScreen" class="overlay">
@@ -99,6 +105,7 @@
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <script src="version.js?v=__APP_VERSION__"></script>
+  <script src="game.js?v=__APP_VERSION__"></script>
 </body>
 </html>

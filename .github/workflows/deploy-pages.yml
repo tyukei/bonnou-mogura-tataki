@@ -23,6 +23,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Inject build version
+        run: |
+          VERSION="v1.0.${{ github.run_number }}"
+          echo "Building ${VERSION}"
+          # 画面表示用バージョン(アップロード毎に run_number で自動採番)
+          printf "window.APP_VERSION = '%s';\n" "${VERSION}" > version.js
+          # アセットのキャッシュ無効化: 参照URLの ?v= を毎回更新
+          sed -i "s/__APP_VERSION__/${{ github.run_number }}/g" index.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
