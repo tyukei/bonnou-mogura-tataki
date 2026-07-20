@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>煩悩めくり</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="stage">
+    <!-- 星空背景 -->
+    <div class="starfield"></div>
+
+    <!-- 被弾時に揺れるゲーム層 -->
+    <div id="shake" class="shake">
+      <!-- HUD -->
+      <div class="hud">
+        <div class="hud-left">
+          <div class="hud-label">精神力</div>
+          <div class="bar bar-hp"><div id="hpFill" class="bar-fill"></div></div>
+          <div class="hud-label" style="margin-top:5px">徳(MP)</div>
+          <div class="bar bar-mp"><div id="mpFill" class="bar-fill"></div></div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-stats">
+            <div class="hud-count">煩悩 <span id="purifiedNum">0</span>/<span id="goalNum">36</span></div>
+            <div class="hud-chain">連鎖 ×<span id="chainNum">0</span></div>
+          </div>
+          <button id="muteBtn" class="mute-btn" type="button" aria-label="ミュート切替">音</button>
+        </div>
+      </div>
+
+      <!-- カード盤面 (JSで9枚生成) -->
+      <div id="board"></div>
+
+      <!-- 読経ビーム -->
+      <div id="beam" class="beam"></div>
+
+      <!-- 見送り成功テキスト -->
+      <div id="bless" class="bless"></div>
+
+      <!-- 下部操作パネル -->
+      <div class="controls">
+        <img class="monk" src="assets/monk_back_1.png" alt="僧侶">
+        <button id="shootBtn" class="shoot-btn" type="button">
+          <div class="shoot-title">読 経</div>
+          <div id="aimLabel" class="aim-label">照準：ーー</div>
+        </button>
+      </div>
+
+      <!-- 被弾演出 -->
+      <div id="attackWrap" class="attack-wrap">
+        <div id="attackWord" class="attack-word"></div>
+        <div id="attackSub" class="attack-sub"></div>
+      </div>
+
+      <!-- ダメージ時ヴィネット -->
+      <div id="vignette" class="vignette"></div>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="startScreen" class="overlay">
+      <div class="title">煩悩めくり</div>
+      <div class="rules">
+        めくれた札が<span class="c-bonno">煩悩</span>なら「読経」で撃て！<br>
+        <span class="c-term">仏教語</span>を撃つと罰。<br>
+        煩悩を見逃すと襲われて中ダメージ。<br>
+        照準は自動。迷わず判断せよ。
+      </div>
+      <button id="startBtn" class="big-btn" type="button">修行の開始</button>
+      <div class="hint">PC: Spaceキーで読経</div>
+    </div>
+
+    <!-- クリア画面 -->
+    <div id="clearScreen" class="overlay overlay-clear" hidden>
+      <div class="result-title result-clear">仏性が育ちました！</div>
+      <div class="result-sub"><span id="clearGoal">36</span>の煩悩を全て打ち払いました</div>
+      <div class="result-cards">
+        <div class="result-card"><div class="rc-label">撃破数</div><div class="rc-val"><span id="clearPurified">0</span> / <span id="clearGoal2">36</span></div></div>
+        <div class="result-card"><div class="rc-label">最大連鎖</div><div class="rc-val" id="clearMaxChain">0</div></div>
+        <div class="result-card"><div class="rc-label">残り精神力</div><div class="rc-val" id="clearHp">0</div></div>
+      </div>
+      <button class="big-btn big-btn-sm restart-btn" type="button">再修行</button>
+    </div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="overScreen" class="overlay overlay-over" hidden>
+      <div class="result-title result-over">煩悩に呑まれた……</div>
+      <div class="result-cards">
+        <div class="result-card result-card-over"><div class="rc-label">撃破数</div><div class="rc-val"><span id="overPurified">0</span> / <span id="overGoal">36</span></div></div>
+        <div class="result-card result-card-over"><div class="rc-label">最大連鎖</div><div class="rc-val" id="overMaxChain">0</div></div>
+      </div>
+      <button class="big-btn big-btn-sm restart-btn" type="button">再修行</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

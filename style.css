@@ -1,0 +1,397 @@
+/* ==========================================================================
+   煩悩めくり — スタイル
+   プロトタイプ (煩悩めくり プロトタイプ.dc.html) をピクセル忠実に再現
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #000;
+  font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+a { color: #e8c65a; }
+a:hover { color: #f5da7a; }
+
+/* --- ステージ (390x800) --- */
+#stage {
+  position: relative;
+  width: 390px;
+  height: 800px;
+  background: radial-gradient(ellipse at 50% -10%, #1b1f3d 0%, #0d0f22 55%, #070812 100%);
+  overflow: hidden;
+  margin: 12px 0;
+  border-radius: 8px;
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 40px 90px, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 300px 60px, rgba(255,255,255,.35), transparent),
+    radial-gradient(1.5px 1.5px at 200px 200px, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 90px 320px, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 340px 420px, rgba(255,255,255,.3), transparent);
+}
+
+.shake { position: absolute; inset: 0; }
+
+/* --- HUD --- */
+.hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 0;
+  font-family: 'DotGothic16', monospace;
+  z-index: 2;
+}
+.hud-label { font-size: 10px; color: #9aa; }
+.bar {
+  width: 130px;
+  background: #22243a;
+  border: 1px solid #555;
+  overflow: hidden;
+}
+.bar-hp { height: 10px; border-radius: 5px; }
+.bar-mp { height: 8px; border-radius: 4px; }
+.bar-fill { height: 100%; transition: width .3s; }
+#hpFill { background: linear-gradient(90deg, #3fae6a, #7ee29a); border-radius: 5px; }
+#mpFill { background: linear-gradient(90deg, #b98de0, #e0c3ff); border-radius: 4px; }
+
+.hud-right { display: flex; align-items: flex-start; gap: 10px; }
+.hud-stats { text-align: right; color: #e8c65a; }
+.hud-count { font-size: 13px; }
+.hud-count span { font-size: 18px; }
+.hud-chain { font-size: 12px; color: #ffb347; margin-top: 2px; }
+
+.mute-btn {
+  width: 34px; height: 34px;
+  background: #22243a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  color: #e8c65a;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+}
+
+/* --- カード --- */
+.cell { position: absolute; width: 96px; height: 138px; perspective: 600px; z-index: 1; }
+.card-inner {
+  position: absolute; inset: 0;
+  transform-style: preserve-3d;
+  transition: transform .3s ease;
+  transform: rotateY(0deg);
+}
+.card-inner.up { transform: rotateY(180deg); }
+
+.card-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #232a52, #161a38);
+  border: 2px solid #b99a3e;
+  display: flex; align-items: center; justify-content: center;
+}
+.card-back-emblem {
+  width: 52px; height: 52px;
+  border: 2px solid rgba(232,198,90,.55);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(232,198,90,.75);
+  font-size: 26px;
+  font-family: 'Shippori Mincho B1', serif;
+}
+
+.card-front {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(170deg, #f4ead2, #e6d4a8);
+  border: 3px solid #4f9d68;
+}
+.card-front.bonno { border-color: #ff5a3c; }
+.card-front.pulse { animation: ringPulse 1.1s ease-in-out infinite; }
+
+.card-word {
+  writing-mode: vertical-rl;
+  font-family: 'Shippori Mincho B1', serif;
+  font-weight: 800;
+  font-size: 32px;
+  color: #1e6b3a;
+  letter-spacing: 6px;
+}
+.card-word.bonno { color: #b3261e; }
+
+.card-badge {
+  position: absolute;
+  top: -11px; left: 50%;
+  transform: translateX(-50%);
+  background: #4f9d68;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-family: 'DotGothic16', monospace;
+  display: none;
+  z-index: 2;
+  white-space: nowrap;
+}
+.card-badge.bonno { background: #ff5a3c; }
+.card-badge.show { display: block; }
+
+.card-timer {
+  position: absolute;
+  bottom: -10px; left: 18px;
+  width: 60px; height: 5px;
+  background: #0d0f22;
+  border-radius: 3px;
+  overflow: hidden;
+  display: none;
+}
+.card-timer.show { display: block; }
+.card-timer-fill {
+  height: 100%;
+  background: #8fd7a0;
+  border-radius: 3px;
+  width: 100%;
+}
+.card-timer-fill.bonno { background: #ff5a3c; }
+
+.card-purify {
+  position: absolute; inset: 0;
+  border-radius: 10px;
+  background: radial-gradient(circle, rgba(255,240,180,.95), rgba(232,198,90,0));
+  display: none;
+  align-items: center; justify-content: center;
+  color: #7a5c10;
+  font-family: 'DotGothic16', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  z-index: 3;
+}
+.card-purify.show { display: flex; animation: popPurify .5s ease-out both; }
+
+/* --- ビーム --- */
+.beam {
+  position: absolute;
+  width: 8px;
+  background: linear-gradient(to top, rgba(232,198,90,.9), rgba(255,255,220,.2));
+  border-radius: 4px;
+  filter: blur(1px);
+  z-index: 4;
+  transform-origin: bottom;
+  display: none;
+}
+.beam.on-a { display: block; animation: beamA .3s ease-out both; }
+.beam.on-b { display: block; animation: beamB .3s ease-out both; }
+
+/* --- 見送り成功 --- */
+.bless {
+  position: absolute;
+  width: 120px;
+  text-align: center;
+  color: #ffe9a0;
+  font-family: 'DotGothic16', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(232,198,90,.9);
+  z-index: 5;
+  pointer-events: none;
+  display: none;
+}
+.bless.on-a { display: block; animation: riseA 1.1s ease-out both; }
+.bless.on-b { display: block; animation: riseB 1.1s ease-out both; }
+
+/* --- 下部操作パネル --- */
+.controls {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 10px 20px 26px;
+  z-index: 3;
+}
+.monk {
+  width: 84px; height: 84px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 10px rgba(232,198,90,.4));
+}
+.shoot-btn {
+  width: 190px; height: 70px;
+  background: linear-gradient(180deg, #e8c65a, #c9a53a);
+  border: 2px solid #f5e2a0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 0 #8a6f22, 0 0 24px rgba(232,198,90,.35);
+  cursor: pointer;
+  font-family: inherit;
+}
+.shoot-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #8a6f22;
+}
+.shoot-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #3a2f0e;
+  letter-spacing: 8px;
+}
+.aim-label {
+  font-size: 9px;
+  color: #5d4c1a;
+  font-family: 'DotGothic16', monospace;
+  font-weight: 400;
+}
+.aim-label.aiming { font-weight: 700; }
+.aim-label.aiming-bonno { color: #8a1a10; }
+
+/* --- 被弾演出 --- */
+.attack-wrap {
+  position: absolute; inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  z-index: 6;
+  pointer-events: none;
+}
+.attack-wrap.show { display: flex; }
+.attack-word {
+  font-family: 'Shippori Mincho B1', serif;
+  font-weight: 800;
+  font-size: 78px;
+  color: #ff5a3c;
+  text-shadow: 0 0 30px rgba(255,60,30,.8);
+}
+.attack-word.a { animation: zoomAtkA .7s ease-out both; }
+.attack-word.b { animation: zoomAtkB .7s ease-out both; }
+.attack-sub {
+  font-size: 14px;
+  color: #ffb0a0;
+  font-family: 'DotGothic16', monospace;
+}
+.attack-sub.a { animation: vignA .9s ease-out both; }
+.attack-sub.b { animation: vignB .9s ease-out both; }
+
+/* --- ヴィネット --- */
+.vignette {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: inset 0 0 80px 30px rgba(255,40,20,.55);
+  opacity: 0;
+}
+.vignette.a { animation: vignA .6s ease-out; }
+.vignette.b { animation: vignB .6s ease-out; }
+
+/* --- 揺れ --- */
+.shake.a { animation: shakeA .45s ease-out; }
+.shake.b { animation: shakeB .45s ease-out; }
+
+/* --- オーバーレイ (スタート/クリア/オーバー) --- */
+.overlay {
+  position: absolute; inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 30px;
+  text-align: center;
+}
+.overlay[hidden] { display: none; }
+#startScreen { background: rgba(4,5,12,.88); }
+.overlay-clear { background: rgba(4,5,12,.9); gap: 20px; }
+.overlay-over { background: rgba(20,4,4,.92); gap: 20px; }
+
+.title {
+  font-family: 'Shippori Mincho B1', serif;
+  font-weight: 800;
+  font-size: 44px;
+  color: #e8c65a;
+  text-shadow: 0 0 30px rgba(232,198,90,.45);
+  letter-spacing: 4px;
+}
+.rules {
+  font-size: 13px;
+  line-height: 2;
+  color: #ccc;
+  border: 1px solid rgba(232,198,90,.4);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.c-bonno { color: #ff7a5e; font-weight: 700; }
+.c-term { color: #8fd7a0; font-weight: 700; }
+.hint { font-size: 11px; color: #889; font-family: 'DotGothic16', monospace; }
+
+.big-btn {
+  width: 220px; height: 60px;
+  background: linear-gradient(180deg, #e8c65a, #c9a53a);
+  border: 2px solid #f5e2a0;
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #3a2f0e;
+  letter-spacing: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #8a6f22;
+  font-family: inherit;
+}
+.big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a6f22; }
+.big-btn-sm { height: 56px; font-size: 18px; letter-spacing: 4px; }
+
+.result-title {
+  font-family: 'Shippori Mincho B1', serif;
+  font-weight: 800;
+  font-size: 36px;
+}
+.result-clear { color: #e8c65a; text-shadow: 0 0 30px rgba(232,198,90,.5); }
+.result-over { color: #ff5a3c; text-shadow: 0 0 30px rgba(255,60,30,.5); }
+.result-sub { font-size: 15px; color: #ffb347; }
+.result-cards { display: flex; gap: 10px; }
+.result-card {
+  border: 1px solid #b99a3e;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #e8c65a;
+  font-family: 'DotGothic16', monospace;
+}
+.result-card-over { border-color: #884; }
+.rc-label { font-size: 11px; color: #aaa; }
+.rc-val { font-size: 18px; }
+
+/* --- キーフレーム (プロトタイプより移植) --- */
+@keyframes ringPulse { 0%,100%{box-shadow:0 0 12px 2px rgba(255,80,60,.55)} 50%{box-shadow:0 0 26px 8px rgba(255,80,60,.85)} }
+@keyframes popPurify { 0%{transform:scale(.5);opacity:0} 30%{transform:scale(1.15);opacity:1} 100%{transform:scale(1);opacity:0} }
+@keyframes zoomAtkA { 0%{transform:scale(.3);opacity:0} 25%{opacity:1} 100%{transform:scale(1.9);opacity:0} }
+@keyframes zoomAtkB { 0%{transform:scale(.3);opacity:0} 25%{opacity:1} 100%{transform:scale(1.9);opacity:0} }
+@keyframes shakeA { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-7px,3px)} 40%{transform:translate(6px,-4px)} 60%{transform:translate(-5px,-2px)} 80%{transform:translate(4px,3px)} }
+@keyframes shakeB { 0%,100%{transform:translate(0,0)} 20%{transform:translate(7px,-3px)} 40%{transform:translate(-6px,4px)} 60%{transform:translate(5px,2px)} 80%{transform:translate(-4px,-3px)} }
+@keyframes vignA { 0%{opacity:1} 100%{opacity:0} }
+@keyframes vignB { 0%{opacity:1} 100%{opacity:0} }
+@keyframes beamA { 0%{opacity:0;transform:scaleY(.2)} 30%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(1)} }
+@keyframes beamB { 0%{opacity:0;transform:scaleY(.2)} 30%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(1)} }
+@keyframes riseA { 0%{opacity:0;transform:translateY(14px) scale(.7)} 25%{opacity:1;transform:translateY(0) scale(1.05)} 100%{opacity:0;transform:translateY(-44px) scale(1)} }
+@keyframes riseB { 0%{opacity:0;transform:translateY(14px) scale(.7)} 25%{opacity:1;transform:translateY(0) scale(1.05)} 100%{opacity:0;transform:translateY(-44px) scale(1)} }
