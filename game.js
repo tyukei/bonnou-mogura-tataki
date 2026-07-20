@@ -277,9 +277,9 @@
         // 煩悩を見逃した → 叱責
         damage(20, '見逃したな！', `「${c.word}」に呑まれた`, 'miss');
       } else {
-        // 仏教語を撃ってしまった
+        // 仏教語を撃ってしまった(お手つき)
         after(100, () => sfx('penalty'));
-        damage(15, '罰', '仏教語を撃ってしまった…', 'wrong');
+        damage(15, 'お手つき！', `「${c.word}」は仏の言葉だ`, 'wrong');
       }
       after(160, checkEndAndAdvance);
     }

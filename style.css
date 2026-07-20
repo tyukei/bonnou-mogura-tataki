@@ -328,8 +328,9 @@ a:hover { color: #f5da7a; }
 }
 .attack-word.a { animation: zoomAtkA .7s ease-out both; }
 .attack-word.b { animation: zoomAtkB .7s ease-out both; }
-/* 煩悩の見逃し:叱責は長文なので縮小 */
+/* 叱責は長文なので縮小 */
 .attack-word.miss { font-size: 50px; color: #ff7a3c; }
+.attack-word.wrong { font-size: 56px; }
 .attack-sub {
   font-size: 14px;
   color: #ffb0a0;
