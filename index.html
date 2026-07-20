@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>煩悩めくり</title>
+<title>煩悩ビンゴ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
         </div>
         <div class="hud-right">
           <div class="hud-stats">
-            <div class="hud-count">煩悩 <span id="purifiedNum">0</span>/<span id="goalNum">36</span></div>
+            <div class="hud-count">ビンゴ <span id="bingoNum">0</span>/<span id="goalNum">3</span></div>
             <div class="hud-chain">連鎖 ×<span id="chainNum">0</span></div>
           </div>
           <button id="muteBtn" class="mute-btn" type="button" aria-label="ミュート切替">音</button>
@@ -63,12 +63,14 @@
 
     <!-- スタート画面 -->
     <div id="startScreen" class="overlay">
-      <div class="title">煩悩めくり</div>
+      <div class="title">煩悩ビンゴ</div>
       <div class="rules">
-        めくれた札が<span class="c-bonno">煩悩</span>なら「読経」で撃て！<br>
-        <span class="c-term">仏教語</span>を撃つと罰。<br>
-        煩悩を見逃すと襲われて中ダメージ。<br>
-        照準は自動。迷わず判断せよ。
+        5×5の札が1枚ずつめくれる。<br>
+        <span class="c-bonno">煩悩</span>だと思ったら「読経」で撃て！<br>
+        撃つ/見送るまで正体は<b>伏せられている</b>。<br>
+        煩悩を撃つ・仏教語を見送る＝<b>成立(○)</b>。<br>
+        成立マスが縦横斜めに揃えば<b>ビンゴ</b>。<br>
+        誤ると被弾。ビンゴ<span class="c-term">3本</span>で悟りへ。
       </div>
       <button id="startBtn" class="big-btn" type="button">修行の開始</button>
       <div class="hint">PC: Spaceキーで読経</div>
@@ -76,10 +78,10 @@
 
     <!-- クリア画面 -->
     <div id="clearScreen" class="overlay overlay-clear" hidden>
-      <div class="result-title result-clear">仏性が育ちました！</div>
-      <div class="result-sub"><span id="clearGoal">36</span>の煩悩を全て打ち払いました</div>
+      <div class="result-title result-clear">悟りの境地！</div>
+      <div class="result-sub"><span id="clearGoal">3</span>本のビンゴを成就しました</div>
       <div class="result-cards">
-        <div class="result-card"><div class="rc-label">撃破数</div><div class="rc-val"><span id="clearPurified">0</span> / <span id="clearGoal2">36</span></div></div>
+        <div class="result-card"><div class="rc-label">ビンゴ</div><div class="rc-val"><span id="clearPurified">0</span> / <span id="clearGoal2">3</span></div></div>
         <div class="result-card"><div class="rc-label">最大連鎖</div><div class="rc-val" id="clearMaxChain">0</div></div>
         <div class="result-card"><div class="rc-label">残り精神力</div><div class="rc-val" id="clearHp">0</div></div>
       </div>
@@ -90,7 +92,7 @@
     <div id="overScreen" class="overlay overlay-over" hidden>
       <div class="result-title result-over">煩悩に呑まれた……</div>
       <div class="result-cards">
-        <div class="result-card result-card-over"><div class="rc-label">撃破数</div><div class="rc-val"><span id="overPurified">0</span> / <span id="overGoal">36</span></div></div>
+        <div class="result-card result-card-over"><div class="rc-label">ビンゴ</div><div class="rc-val"><span id="overPurified">0</span> / <span id="overGoal">3</span></div></div>
         <div class="result-card result-card-over"><div class="rc-label">最大連鎖</div><div class="rc-val" id="overMaxChain">0</div></div>
       </div>
       <button class="big-btn big-btn-sm restart-btn" type="button">再修行</button>

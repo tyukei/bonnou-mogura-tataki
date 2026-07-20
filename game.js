@@ -1,31 +1,57 @@
 /* ==========================================================================
-   煩悩めくり — ゲームロジック
-   プロトタイプ (煩悩めくり プロトタイプ.dc.html / DCLogic) を
-   バニラJSへ忠実移植したもの。
+   煩悩ビンゴ — ゲームロジック
+   5×5 のビンゴ盤。カードが1枚ずつ自動でめくれる(自動照準)。
+   単語は見えるが「煩悩」か「仏教語」かは読経を撃つ/見送るまで分からない。
+   ・煩悩を読経で撃つ    → 正解 → そのマス成立(○)
+   ・仏教語を見送る      → 正解 → そのマス成立(○)
+   ・仏教語を撃つ        → 誤り → 被弾・不成立(✕)
+   ・煩悩を見逃す        → 誤り → 被弾・不成立(✕)
+   一度めくったマスは裏返らず、成立マスが縦横斜めに揃うとビンゴ。
+   規定数のビンゴでクリア。
    ========================================================================== */
 (() => {
   'use strict';
 
-  // --- ゲームバランス (プロトタイプの props default) --------------------
+  // --- 盤面サイズ -------------------------------------------------------
+  const SIZE = 5;
+  const CELLS = SIZE * SIZE; // 25
+
+  // --- ゲームバランス --------------------------------------------------
   const CONFIG = {
-    goal: 36,        // 浄化すべき煩悩の総数
-    bonnoRate: 0.6,  // めくった札が煩悩である確率
-    faceUpMs: 2400,  // 札が表になっている基本時間(ms)
+    bingoGoal: 3,    // クリアに必要なビンゴ本数(複数)
+    bonnoRate: 0.6,  // 各マスが煩悩である確率
+    faceUpMs: 2800,  // 札が表(判断可能)になっている基本時間(ms)
   };
 
   const BONNO = ['貪欲', '瞋恚', '愚痴', '慢心', '疑念', '嫉妬', '怠惰', '執着', '憤怒', '虚栄'];
   const TERMS = ['智慧', '布施', '慈悲', '精進', '忍辱', '禅定', '持戒', '菩提', '功徳', '涅槃'];
+
+  // --- 全ビンゴライン(行5・列5・斜め2) ------------------------------
+  const LINES = (() => {
+    const lines = [];
+    for (let r = 0; r < SIZE; r++) lines.push(Array.from({ length: SIZE }, (_, c) => r * SIZE + c));
+    for (let c = 0; c < SIZE; c++) lines.push(Array.from({ length: SIZE }, (_, r) => r * SIZE + c));
+    lines.push(Array.from({ length: SIZE }, (_, i) => i * SIZE + i));
+    lines.push(Array.from({ length: SIZE }, (_, i) => i * SIZE + (SIZE - 1 - i)));
+    return lines;
+  })();
 
   // --- 状態 ------------------------------------------------------------
   const state = {
     phase: 'ready',   // ready | playing | clear | over
     hp: 100,
     mp: 0,
-    purified: 0,
+    purified: 0,      // 撃破した煩悩の数(統計用)
+    marked: 0,        // 成立したマス数
+    bingo: 0,         // 成立したビンゴ本数
     chain: 0,
     maxChain: 0,
-    cards: Array.from({ length: 9 }, (_, i) => ({
-      id: i, st: 'down', word: '', bonno: false, timerOn: false, tok: 0,
+    resolved: 0,      // 判定済みマス数
+    // 各マス: st(down/up) resolved(判定済み) bonno(正体) word marked(成立)
+    //         correct(正誤) revealed(正体開示) timerOn tok
+    cards: Array.from({ length: CELLS }, (_, i) => ({
+      id: i, st: 'down', resolved: false, bonno: false, word: '',
+      marked: false, correct: false, revealed: false, timerOn: false, tok: 0,
     })),
     beam: null,     // {id, seq}
     attack: null,   // {word, sub, seq}
@@ -84,6 +110,7 @@
     else if (kind === 'purify') { tone(1047, t, 0.35, 'sine', 0.22); tone(1568, t + 0.06, 0.4, 'sine', 0.15); tone(2093, t + 0.12, 0.5, 'sine', 0.1); }
     else if (kind === 'damage') { noise(t, 0.3, 0.3); tone(110, t, 0.4, 'sawtooth', 0.25, 55); }
     else if (kind === 'penalty') { tone(311, t, 0.25, 'square', 0.18, 155); tone(233, t + 0.12, 0.3, 'square', 0.15, 117); }
+    else if (kind === 'bingo') { [784, 988, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.08, 0.4, 'square', 0.16)); }
     else if (kind === 'clear') { [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.15, 0.6, 'sine', 0.2)); tone(1319, t + 0.6, 1.2, 'sine', 0.15); }
     else if (kind === 'over') { [330, 277, 220, 165].forEach((f, i) => tone(f, t + i * 0.2, 0.5, 'triangle', 0.2)); }
     else if (kind === 'bell') { tone(1760, t, 1.5, 'sine', 0.06); tone(2637, t, 0.8, 'sine', 0.025); }
@@ -112,16 +139,16 @@
   // ======================================================================
   //  ヘルパ
   // ======================================================================
-  const goal = () => CONFIG.goal;
+  const bingoGoal = () => CONFIG.bingoGoal;
   const rate = () => CONFIG.bonnoRate;
-  const faceMs = () => Math.max(1300, CONFIG.faceUpMs - (state.purified / goal()) * 1000);
+  const faceMs = () => Math.max(1600, CONFIG.faceUpMs - (state.resolved / CELLS) * 1000);
 
   function after(ms, fn) { timers.push(setTimeout(fn, ms)); }
   function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
   function geo(id) {
-    const col = id % 3, row = Math.floor(id / 3);
-    return { x: 37 + col * 110, y: 130 + row * 152 };
+    const col = id % SIZE, row = Math.floor(id / SIZE);
+    return { x: 19 + col * 72, y: 118 + row * 96 };
   }
 
   function setCard(id, patch) {
@@ -130,17 +157,36 @@
     render();
   }
 
+  // 成立マスからビンゴ本数を数える
+  function countBingo() {
+    let n = 0;
+    for (const line of LINES) {
+      if (line.every(i => state.cards[i].marked)) n++;
+    }
+    return n;
+  }
+
   // ======================================================================
   //  ゲーム進行
   // ======================================================================
   function start() {
     clearTimers();
     state.phase = 'playing';
-    state.hp = 100; state.mp = 0; state.purified = 0;
-    state.chain = 0; state.maxChain = 0;
+    state.hp = 100; state.mp = 0;
+    state.purified = 0; state.marked = 0; state.bingo = 0;
+    state.chain = 0; state.maxChain = 0; state.resolved = 0;
     state.beam = null; state.attack = null; state.bless = null;
     state.dmgSeq = 0;
-    state.cards = state.cards.map(c => ({ ...c, st: 'down', timerOn: false, word: '', bonno: false }));
+    // 盤面を固定生成(正体は伏せたまま)
+    state.cards = state.cards.map((c, i) => {
+      const bonno = Math.random() < rate();
+      const list = bonno ? BONNO : TERMS;
+      const word = list[Math.floor(Math.random() * list.length)];
+      return {
+        id: i, st: 'down', resolved: false, bonno, word,
+        marked: false, correct: false, revealed: false, timerOn: false, tok: 0,
+      };
+    });
     render();
     ac(); startBgm(); sfx('bell');
     after(800, flipNext);
@@ -149,42 +195,94 @@
   function flipNext() {
     if (state.phase !== 'playing') return;
     const downs = state.cards.filter(c => c.st === 'down');
-    if (!downs.length) { after(400, flipNext); return; }
+    if (!downs.length) return; // 全マスめくり終わり(判定は各resolveで終了処理)
     const pick = downs[Math.floor(Math.random() * downs.length)];
-    const bonno = Math.random() < rate();
-    const list = bonno ? BONNO : TERMS;
-    const word = list[Math.floor(Math.random() * list.length)];
     upTok += 1;
     const tok = upTok, id = pick.id, dur = faceMs();
-    setCard(id, { st: 'up', bonno, word, timerOn: false, tok });
+    // めくる:単語は見せるが正体(色)は伏せたまま
+    setCard(id, { st: 'up', revealed: false, timerOn: false, tok });
     sfx('flip');
-    // 50ms後にタイマー開始 (width 100%→0% のトランジションを発火させる)
+    // 50ms後にタイマー開始(width 100%→0% のトランジションを発火)
     after(50, () => {
       const cc = state.cards[id];
-      if (cc.st === 'up' && cc.tok === tok) setCard(id, { timerOn: true });
+      if (cc.st === 'up' && !cc.resolved && cc.tok === tok) setCard(id, { timerOn: true });
     });
-    // 表示時間終了
+    // 表示時間終了 = 見送り(読経しなかった)判定
     after(dur, () => {
       const cc = state.cards[id];
-      if (cc.st === 'up' && cc.tok === tok) {
-        setCard(id, { st: 'down', timerOn: false });
-        if (cc.bonno) {
-          damage(20, cc.word, '煩悩の襲来！');
-        } else {
-          state.mp = Math.min(100, state.mp + 10);
-          state.bless = { id, seq: (state.bless ? state.bless.seq : 0) + 1 };
-          render();
-          sfx('bless');
-          after(1100, () => { state.bless = null; render(); });
-        }
+      if (cc.st === 'up' && !cc.resolved && cc.tok === tok) {
+        resolve(id, false); // fired = false(見送り)
       }
     });
-    after(dur + 500 + Math.random() * 500, flipNext);
+  }
+
+  // マス判定。fired: プレイヤーが読経を撃ったか
+  function resolve(id, fired) {
+    const c = state.cards[id];
+    if (c.resolved) return;
+    const correct = fired ? c.bonno : !c.bonno; // 煩悩を撃つ or 仏教語を見送る = 正解
+    setCard(id, { resolved: true, revealed: true, timerOn: false, correct, marked: correct });
+    state.resolved += 1;
+
+    if (correct) {
+      state.marked += 1;
+      state.chain += 1;
+      state.maxChain = Math.max(state.maxChain, state.chain);
+      if (c.bonno) {
+        state.purified += 1;
+        state.mp = Math.min(100, state.mp + 6);
+        after(120, () => sfx('purify'));
+      } else {
+        // 見送り成功
+        state.mp = Math.min(100, state.mp + 10);
+        state.bless = { id, seq: (state.bless ? state.bless.seq : 0) + 1 };
+        sfx('bless');
+        after(1100, () => { state.bless = null; render(); });
+      }
+      render();
+      // ビンゴ判定
+      const b = countBingo();
+      if (b > state.bingo) {
+        state.bingo = b;
+        after(140, () => sfx('bingo'));
+      }
+      after(120, () => {
+        if (state.bingo >= bingoGoal() && state.phase === 'playing') {
+          clearTimers();
+          state.phase = 'clear';
+          render();
+          sfx('clear');
+          return;
+        }
+        checkEndAndAdvance();
+      });
+    } else {
+      // 誤り:被弾
+      state.chain = 0;
+      const dmg = c.bonno ? 20 : 15;
+      const sub = c.bonno ? '煩悩の見逃し！' : '仏教語を撃ってしまった…';
+      if (fired) { after(100, () => sfx('penalty')); }
+      damage(dmg, c.bonno ? c.word : '罰', sub);
+      after(160, checkEndAndAdvance);
+    }
+  }
+
+  // 次のマスへ / 全マス判定済みなら終了判定
+  function checkEndAndAdvance() {
+    if (state.phase !== 'playing') return;
+    if (state.hp <= 0) return; // 致命被弾時は damage 側のゲームオーバー処理に委ねる
+    if (state.resolved >= CELLS) {
+      clearTimers();
+      state.phase = state.bingo >= bingoGoal() ? 'clear' : 'over';
+      render();
+      sfx(state.phase === 'clear' ? 'clear' : 'over');
+      return;
+    }
+    after(450 + Math.random() * 350, flipNext);
   }
 
   function damage(amount, word, sub) {
     state.hp = Math.max(0, state.hp - amount);
-    state.chain = 0;
     state.attack = { word, sub, seq: (state.attack ? state.attack.seq : 0) + 1 };
     state.dmgSeq += 1;
     render();
@@ -203,37 +301,14 @@
 
   function shoot() {
     if (state.phase !== 'playing') return;
-    const up = state.cards.find(c => c.st === 'up');
+    // 自動照準:めくれていて未判定のマス
+    const up = state.cards.find(c => c.st === 'up' && !c.resolved);
     if (!up) return;
     state.beam = { id: up.id, seq: (state.beam ? state.beam.seq : 0) + 1 };
     render();
     after(300, () => { state.beam = null; render(); });
     sfx('shoot');
-    if (up.bonno) {
-      after(120, () => sfx('purify'));
-      setCard(up.id, { st: 'purify', timerOn: false });
-      after(500, () => {
-        if (state.cards[up.id].st === 'purify') setCard(up.id, { st: 'down' });
-      });
-      const chain = state.chain + 1;
-      state.purified += 1;
-      state.chain = chain;
-      state.maxChain = Math.max(state.maxChain, chain);
-      state.mp = Math.min(100, state.mp + 6);
-      render();
-      after(60, () => {
-        if (state.purified >= goal() && state.phase === 'playing') {
-          clearTimers();
-          state.phase = 'clear';
-          render();
-          sfx('clear');
-        }
-      });
-    } else {
-      setCard(up.id, { st: 'down', timerOn: false });
-      after(100, () => sfx('penalty'));
-      damage(15, '罰', '仏教語を撃ってしまった…');
-    }
+    resolve(up.id, true);
   }
 
   function toggleMute() { state.muted = !state.muted; render(); }
@@ -245,7 +320,7 @@
   const cardEls = [];
 
   function buildCards(board) {
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < CELLS; i++) {
       const { x, y } = geo(i);
       const cell = document.createElement('div');
       cell.className = 'cell';
@@ -262,7 +337,8 @@
         </div>
         <div class="card-badge"></div>
         <div class="card-timer"><div class="card-timer-fill"></div></div>
-        <div class="card-purify">浄化!</div>`;
+        <div class="card-mark"></div>
+        <div class="card-purify">浄</div>`;
       board.appendChild(cell);
       cardEls.push({
         cell,
@@ -272,6 +348,7 @@
         badge: cell.querySelector('.card-badge'),
         timer: cell.querySelector('.card-timer'),
         timerFill: cell.querySelector('.card-timer-fill'),
+        mark: cell.querySelector('.card-mark'),
         purify: cell.querySelector('.card-purify'),
       });
     }
@@ -283,36 +360,52 @@
     // HUD
     el.hpFill.style.width = s.hp + '%';
     el.mpFill.style.width = s.mp + '%';
-    el.purifiedNum.textContent = s.purified;
-    el.goalNum.textContent = goal();
+    el.bingoNum.textContent = s.bingo;
+    el.goalNum.textContent = bingoGoal();
     el.chainNum.textContent = s.chain;
     el.muteBtn.textContent = s.muted ? '消' : '音';
 
     // カード
     s.cards.forEach((c, i) => {
       const e = cardEls[i];
-      const up = c.st === 'up' || c.st === 'purify';
+      const up = c.st === 'up';
+      const active = up && !c.resolved;
       e.inner.className = 'card-inner' + (up ? ' up' : '');
-      e.front.className = 'card-front' + (c.bonno ? ' bonno' : '') +
-        (c.st === 'up' && c.bonno ? ' pulse' : '');
-      e.word.className = 'card-word' + (c.bonno ? ' bonno' : '');
+      // 正体は revealed(判定済み)まで伏せる。未判定は無色、判定後は正誤で色
+      e.front.className = 'card-front'
+        + (active ? ' active' : '')
+        + (c.revealed && c.bonno ? ' reveal-bonno' : '')
+        + (c.revealed && !c.bonno ? ' reveal-term' : '');
+      e.word.className = 'card-word'
+        + (c.revealed && c.bonno ? ' bonno' : '')
+        + (c.revealed && !c.bonno ? ' term' : '');
       e.word.textContent = c.word;
-      e.badge.className = 'card-badge' + (c.bonno ? ' bonno' : '') + (c.st === 'up' ? ' show' : '');
-      e.badge.textContent = c.bonno ? '煩悩!' : '仏教語';
-      e.timer.className = 'card-timer' + (c.st === 'up' ? ' show' : '');
-      e.timerFill.className = 'card-timer-fill' + (c.bonno ? ' bonno' : '');
+      // バッジは判定後に正体を表示
+      e.badge.className = 'card-badge'
+        + (c.bonno ? ' bonno' : '')
+        + (c.revealed ? ' show' : '');
+      e.badge.textContent = c.bonno ? '煩悩' : '仏教語';
+      // タイマーは判定中(active)のみ。色は伏せるため常に中立色
+      e.timer.className = 'card-timer' + (active ? ' show' : '');
+      e.timerFill.className = 'card-timer-fill';
       e.timerFill.style.width = c.timerOn ? '0%' : '100%';
       e.timerFill.style.transition = c.timerOn ? 'width ' + dur + 'ms linear' : 'none';
-      e.purify.className = 'card-purify' + (c.st === 'purify' ? ' show' : '');
+      // 成立/不成立マーク
+      e.mark.className = 'card-mark'
+        + (c.resolved ? (c.correct ? ' ok' : ' ng') : '');
+      e.mark.textContent = c.resolved ? (c.correct ? '○' : '✕') : '';
+      // 浄化演出(煩悩を撃った瞬間)
+      e.purify.className = 'card-purify'
+        + (c.resolved && c.correct && c.bonno ? ' show' : '');
     });
 
     // ビーム
     if (s.beam) {
       const { x, y } = geo(s.beam.id);
-      const top = y + 138;
-      el.beam.style.left = (x + 44) + 'px';
+      const top = y + 92;
+      el.beam.style.left = (x + 28) + 'px';
       el.beam.style.top = top + 'px';
-      el.beam.style.height = (690 - top) + 'px';
+      el.beam.style.height = (700 - top) + 'px';
       el.beam.className = 'beam ' + (s.beam.seq % 2 ? 'on-a' : 'on-b');
     } else {
       el.beam.className = 'beam';
@@ -321,19 +414,18 @@
     // 見送り成功
     if (s.bless) {
       const { x, y } = geo(s.bless.id);
-      el.bless.style.left = (x - 12) + 'px';
-      el.bless.style.top = (y + 44) + 'px';
+      el.bless.style.left = (x - 28) + 'px';
+      el.bless.style.top = (y + 20) + 'px';
       el.bless.textContent = '見送り成功 功徳+10';
       el.bless.className = 'bless ' + (s.bless.seq % 2 ? 'on-a' : 'on-b');
     } else {
       el.bless.className = 'bless';
     }
 
-    // 照準ラベル
-    const upCard = s.cards.find(c => c.st === 'up');
-    el.aimLabel.textContent = upCard ? '自動照準：' + upCard.word : '照準：ーー';
-    el.aimLabel.className = 'aim-label' +
-      (upCard ? ' aiming' : '') + (upCard && upCard.bonno ? ' aiming-bonno' : '');
+    // 照準ラベル(正体は伏せるので中立表示)
+    const upCard = s.cards.find(c => c.st === 'up' && !c.resolved);
+    el.aimLabel.textContent = upCard ? '照準：' + upCard.word : '照準：ーー';
+    el.aimLabel.className = 'aim-label' + (upCard ? ' aiming' : '');
 
     // 揺れ
     el.shake.className = 'shake' + (s.dmgSeq ? (s.dmgSeq % 2 ? ' a' : ' b') : '');
@@ -356,15 +448,15 @@
     el.overScreen.hidden = s.phase !== 'over';
 
     if (s.phase === 'clear') {
-      el.clearGoal.textContent = goal();
-      el.clearGoal2.textContent = goal();
-      el.clearPurified.textContent = s.purified;
+      el.clearGoal.textContent = s.bingo;
+      el.clearGoal2.textContent = bingoGoal();
+      el.clearPurified.textContent = s.bingo;
       el.clearMaxChain.textContent = s.maxChain;
       el.clearHp.textContent = s.hp;
     }
     if (s.phase === 'over') {
-      el.overGoal.textContent = goal();
-      el.overPurified.textContent = s.purified;
+      el.overGoal.textContent = bingoGoal();
+      el.overPurified.textContent = s.bingo;
       el.overMaxChain.textContent = s.maxChain;
     }
   }
@@ -373,7 +465,7 @@
   //  初期化
   // ======================================================================
   function init() {
-    const ids = ['hpFill', 'mpFill', 'purifiedNum', 'goalNum', 'chainNum', 'muteBtn',
+    const ids = ['hpFill', 'mpFill', 'bingoNum', 'goalNum', 'chainNum', 'muteBtn',
       'beam', 'bless', 'aimLabel', 'shake', 'attackWrap', 'attackWord', 'attackSub',
       'vignette', 'startScreen', 'clearScreen', 'overScreen',
       'clearGoal', 'clearGoal2', 'clearPurified', 'clearMaxChain', 'clearHp',
