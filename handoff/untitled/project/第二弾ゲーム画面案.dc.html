@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#111;font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+a{color:#e8c65a}a:hover{color:#f5da7a}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(255,255,255,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#e8c65a;color:#111;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 sans-serif;color:#eee}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.14);color:#eee;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 sans-serif;color:rgba(255,255,255,.6)}
+.dv-card{max-width:100%;background:#000;border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.6);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 sans-serif;color:rgba(255,255,255,.5)}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 12px 2px rgba(255,80,60,.55)}50%{box-shadow:0 0 26px 8px rgba(255,80,60,.85)}}
+@keyframes goldPulse{0%,100%{box-shadow:0 0 10px 2px rgba(232,198,90,.4)}50%{box-shadow:0 0 22px 6px rgba(232,198,90,.7)}}
+@keyframes floatY{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-8px) rotate(var(--r,0deg))}}
+</style>
+</helmet>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">第二弾「煩悩めくり」ゲームプレイ画面 — 3案（モグラたたき式・射撃ボタン1つ・自動照準）</span></div>
+<div style="max-width:760px;margin:0 0 26px;padding:16px 18px;background:rgba(232,198,90,.06);border:1px solid rgba(232,198,90,.25);border-radius:8px;font-size:12px;line-height:1.8;color:rgba(255,255,255,.72)">
+<b style="color:#e8c65a">前提・設計メモ</b><br>
+・第一弾のトーン（黒×金、ピクセル僧侶、修行コピー）を継承。横移動は廃止し、操作は「読経」ボタン1つ。<br>
+・カードは1枚ずつランダムにめくれ、一定時間で自動的に裏へ戻る。照準は「今めくれているカード」に自動で合う。<br>
+・めくれた札が<span style="color:#ff7a5e">煩悩</span>→撃てば浄化＋連鎖UP／放置して戻ると煩悩が襲来し中ダメージ。<span style="color:#8fd7a0">仏教用語</span>→撃つとダメージ（罰）、見送れば功徳。<br>
+・レベルで札の枚数が増える：仏性Lev1=2×3(36体)、Lev2=3×3(72体)、Lev3=3×4(108体)。モックはLev2想定。<br>
+・僧侶スプライトは既存ゲームのピクセル素材を使用予定（ここではプレースホルダ）。
+</div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>和風札 — 花札のような厚みのある札を3×3で。いちばん第一弾の正統進化</div>
+<div class="dv-card" style="width:390px">
+<div style="position:relative;width:390px;height:800px;background:radial-gradient(ellipse at 50% -10%,#1b1f3d 0%,#0d0f22 55%,#070812 100%);overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(1px 1px at 40px 90px,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 300px 60px,rgba(255,255,255,.35),transparent),radial-gradient(1.5px 1.5px at 200px 200px,rgba(255,255,255,.3),transparent),radial-gradient(1px 1px at 90px 320px,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 340px 420px,rgba(255,255,255,.3),transparent)"></div>
+  <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px;font-family:'DotGothic16',monospace">
+    <div style="flex:1">
+      <div style="font-size:10px;color:#9aa">精神力</div>
+      <div style="width:130px;height:10px;background:#22243a;border:1px solid #555;border-radius:5px;overflow:hidden"><div style="width:72%;height:100%;background:linear-gradient(90deg,#3fae6a,#7ee29a)"></div></div>
+      <div style="font-size:10px;color:#9aa;margin-top:5px">徳(MP)</div>
+      <div style="width:130px;height:8px;background:#22243a;border:1px solid #555;border-radius:4px;overflow:hidden"><div style="width:45%;height:100%;background:linear-gradient(90deg,#b98de0,#e0c3ff)"></div></div>
+    </div>
+    <div style="text-align:right;color:#e8c65a">
+      <div style="font-size:13px">煩悩 <span style="font-size:18px">24</span>/72</div>
+      <div style="font-size:12px;color:#ffb347;margin-top:2px">連鎖 ×8</div>
+    </div>
+  </div>
+  <div style="position:relative;flex:1;display:grid;grid-template-columns:repeat(3,96px);grid-template-rows:repeat(3,138px);gap:14px;justify-content:center;align-content:center">
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="position:relative;background:linear-gradient(170deg,#f4ead2,#e6d4a8);border:3px solid #ff5a3c;border-radius:10px;display:flex;align-items:center;justify-content:center;animation:ringPulse 1.1s ease-in-out infinite;transform:scale(1.06)">
+      <div style="writing-mode:vertical-rl;font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:34px;color:#b3261e;letter-spacing:6px">瞋恚</div>
+      <div style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#ff5a3c;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;font-family:'DotGothic16',monospace">煩悩!</div>
+      <svg width="30" height="30" viewBox="0 0 30 30" style="position:absolute;bottom:-13px;left:50%;transform:translateX(-50%)"><circle cx="15" cy="15" r="12" fill="#0d0f22" stroke="#444" stroke-width="2"></circle><path d="M15 3 A12 12 0 0 1 27 15" fill="none" stroke="#ff5a3c" stroke-width="3" stroke-linecap="round"></path></svg>
+    </div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center;opacity:.35"><div style="font-size:11px;color:#8fd7a0;font-family:'DotGothic16',monospace">浄化済</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center"><div style="width:52px;height:52px;border:2px solid rgba(232,198,90,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;color:rgba(232,198,90,.75);font-size:26px;font-family:'Shippori Mincho B1',serif">佛</div></div>
+    <div style="background:linear-gradient(160deg,#232a52,#161a38);border:2px solid #b99a3e;border-radius:10px;display:flex;align-items:center;justify-content:center;opacity:.35"><div style="font-size:11px;color:#8fd7a0;font-family:'DotGothic16',monospace">浄化済</div></div>
+    <div style="position:absolute;left:50%;bottom:-6px;width:3px;height:70px;background:linear-gradient(to top,rgba(232,198,90,0),rgba(232,198,90,.7));transform:translateX(calc(-50% + 0px))"></div>
+  </div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:22px;padding:10px 20px 26px">
+    <div style="width:64px;height:84px;background:repeating-conic-gradient(#2a2d45 0 25%,#232640 0 50%);background-size:8px 8px;border:1px dashed #667;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#99a;text-align:center;font-family:'DotGothic16',monospace">僧侶<br>スプライト</div>
+    <div style="width:190px;height:70px;background:linear-gradient(180deg,#e8c65a,#c9a53a);border:2px solid #f5e2a0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 #8a6f22,0 0 24px rgba(232,198,90,.35)">
+      <div style="font-size:22px;font-weight:800;color:#3a2f0e;letter-spacing:8px">読 経</div>
+      <div style="font-size:9px;color:#5d4c1a;font-family:'DotGothic16',monospace">自動照準：瞋恚</div>
+    </div>
+  </div>
+</div>
+</div>
+<div style="max-width:390px;font-size:11px;line-height:1.7;color:rgba(255,255,255,.55)">裏面は紺地×金縁の「佛」印。めくれると生成りの和紙面が現れ、煩悩は朱字＋赤縁パルス、残り時間は札下のリング。読経ボタンに現在の照準名を表示。</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>木魚たたき — 木魚がポコッと飛び出すモグラたたき。ボタンは撥（ばち）</div>
+<div class="dv-card" style="width:390px">
+<div style="position:relative;width:390px;height:800px;background:linear-gradient(180deg,#0c0a14 0%,#171126 55%,#241a30 100%);overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;left:0;right:0;bottom:0;height:300px;background:repeating-linear-gradient(90deg,#2b2118 0 46px,#241b13 46px 92px);opacity:.85"></div>
+  <div style="position:absolute;left:0;right:0;bottom:296px;height:10px;background:#3d2f1e;box-shadow:0 -2px 8px rgba(0,0,0,.6)"></div>
+  <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-family:'DotGothic16',monospace">
+    <div>
+      <div style="display:flex;gap:3px;align-items:center"><span style="font-size:10px;color:#9aa;margin-right:4px">精神力</span><span style="width:14px;height:14px;background:#e8c65a;border-radius:50%;display:inline-block"></span><span style="width:14px;height:14px;background:#e8c65a;border-radius:50%;display:inline-block"></span><span style="width:14px;height:14px;background:#e8c65a;border-radius:50%;display:inline-block"></span><span style="width:14px;height:14px;background:#3a3a4a;border-radius:50%;display:inline-block"></span><span style="width:14px;height:14px;background:#3a3a4a;border-radius:50%;display:inline-block"></span></div>
+      <div style="font-size:10px;color:#b98de0;margin-top:6px">徳 ▮▮▮▮▯▯▯▯</div>
+    </div>
+    <div style="text-align:right;color:#e8c65a"><div style="font-size:13px">煩悩 <span style="font-size:18px">24</span>/72</div><div style="font-size:12px;color:#ffb347">連鎖 ×8</div></div>
+  </div>
+  <div style="position:relative;flex:1;display:grid;grid-template-columns:repeat(3,110px);grid-template-rows:repeat(3,150px);gap:8px;justify-content:center;align-content:end;padding-bottom:8px">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
+      <div style="position:relative;width:92px;height:112px;margin-bottom:-6px">
+        <div style="position:absolute;bottom:8px;left:6px;width:80px;height:66px;background:radial-gradient(ellipse at 45% 30%,#c98f4e,#8a5a28 70%,#6b4218);border-radius:48% 48% 44% 44%;box-shadow:0 4px 10px rgba(0,0,0,.6),0 0 20px rgba(255,90,60,.5)"></div>
+        <div style="position:absolute;bottom:38px;left:20px;width:52px;height:16px;border-bottom:4px solid #5c3a14;border-radius:50%"></div>
+        <div style="position:absolute;top:-22px;left:50%;transform:translateX(-50%);background:#f4ead2;border:2px solid #ff5a3c;border-radius:8px;padding:4px 10px;font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:22px;color:#b3261e;white-space:nowrap;animation:ringPulse 1.1s ease-in-out infinite">貪欲</div>
+        <div style="position:absolute;top:-34px;left:50%;transform:translateX(-50%);width:44px;height:5px;background:#333;border-radius:3px"><div style="width:60%;height:100%;background:#ff5a3c;border-radius:3px"></div></div>
+      </div>
+      <div style="width:86px;height:20px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end">
+      <div style="position:relative;width:92px;height:70px;margin-bottom:-6px;opacity:.9">
+        <div style="position:absolute;bottom:8px;left:6px;width:80px;height:56px;background:radial-gradient(ellipse at 45% 30%,#c9b04e,#8a7228 70%,#6b5618);border-radius:48% 48% 44% 44%;box-shadow:0 4px 10px rgba(0,0,0,.6),0 0 18px rgba(232,198,90,.45);animation:goldPulse 1.6s ease-in-out infinite"></div>
+        <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);background:#eaf6ec;border:2px solid #4f9d68;border-radius:8px;padding:3px 9px;font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:19px;color:#1e6b3a;white-space:nowrap">智慧</div>
+      </div>
+      <div style="width:86px;height:20px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><div style="width:86px;height:34px;background:radial-gradient(ellipse at 50% 30%,#1c1526,#0e0a18);border-radius:50%;border:2px solid #4a3b2a;box-shadow:inset 0 6px 10px #000"></div></div>
+  </div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:24px;padding:12px 20px 26px">
+    <div style="width:64px;height:84px;background:repeating-conic-gradient(#2e261c 0 25%,#261f16 0 50%);background-size:8px 8px;border:1px dashed #776;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#aa9;text-align:center;font-family:'DotGothic16',monospace">僧侶<br>スプライト</div>
+    <div style="position:relative;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#f0d98a,#c9a53a 60%,#9a7c28);border:3px solid #f5e2a0;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 0 #6e5718,0 0 30px rgba(232,198,90,.4)">
+      <svg width="34" height="34" viewBox="0 0 34 34"><rect x="15" y="4" width="4" height="20" rx="2" fill="#5c3a14" transform="rotate(35 17 17)"></rect><circle cx="10" cy="25" r="6" fill="#7a4e1c"></circle></svg>
+      <div style="font-size:17px;font-weight:800;color:#3a2f0e;letter-spacing:3px;margin-top:2px">打つ!</div>
+    </div>
+  </div>
+</div>
+</div>
+<div style="max-width:390px;font-size:11px;line-height:1.7;color:rgba(255,255,255,.55)">穴から木魚が飛び出し、頭上に言葉の札。煩悩は赤枠・仏教用語は緑枠で色分けし、残り時間はゲージバー。ボタンは丸い「打つ!」＝撥で叩くメタファ。触覚的で子どもにも分かりやすい案。</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>宙に浮くお札 — 暗闇に漂う霊符が一枚ずつ反転する、幽玄・ホラー寄りの案</div>
+<div class="dv-card" style="width:390px">
+<div style="position:relative;width:390px;height:800px;background:radial-gradient(ellipse at 50% 110%,#2a1636 0%,#140b22 45%,#08050f 100%);overflow:hidden;display:flex;flex-direction:column">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(2px 2px at 60px 500px,rgba(180,120,255,.35),transparent),radial-gradient(2px 2px at 320px 380px,rgba(180,120,255,.3),transparent),radial-gradient(1.5px 1.5px at 150px 620px,rgba(255,200,120,.3),transparent),radial-gradient(1px 1px at 250px 150px,rgba(255,255,255,.4),transparent)"></div>
+  <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-family:'DotGothic16',monospace">
+    <div style="flex:1">
+      <div style="font-size:10px;color:#9aa">精神力</div>
+      <div style="width:130px;height:10px;background:#22243a;border:1px solid #555;border-radius:5px;overflow:hidden"><div style="width:72%;height:100%;background:linear-gradient(90deg,#3fae6a,#7ee29a)"></div></div>
+    </div>
+    <div style="text-align:right;color:#e8c65a"><div style="font-size:13px">煩悩 <span style="font-size:18px">24</span>/72</div><div style="font-size:12px;color:#ffb347">連鎖 ×8</div></div>
+  </div>
+  <div style="position:relative;flex:1">
+    <div style="--r:-8deg;position:absolute;top:30px;left:28px;width:66px;height:176px;background:linear-gradient(180deg,#20183a,#171130);border:1px solid rgba(180,140,255,.4);border-radius:4px;display:flex;align-items:center;justify-content:center;animation:floatY 3.4s ease-in-out infinite;box-shadow:0 0 14px rgba(140,90,220,.25)"><div style="writing-mode:vertical-rl;color:rgba(200,170,255,.5);font-family:'Shippori Mincho B1',serif;font-size:15px;letter-spacing:4px">南無阿弥陀佛</div></div>
+    <div style="--r:5deg;position:absolute;top:12px;right:36px;width:66px;height:176px;background:linear-gradient(180deg,#20183a,#171130);border:1px solid rgba(180,140,255,.4);border-radius:4px;display:flex;align-items:center;justify-content:center;animation:floatY 4.1s ease-in-out infinite .6s;box-shadow:0 0 14px rgba(140,90,220,.25)"><div style="writing-mode:vertical-rl;color:rgba(200,170,255,.5);font-family:'Shippori Mincho B1',serif;font-size:15px;letter-spacing:4px">南無阿弥陀佛</div></div>
+    <div style="--r:2deg;position:absolute;top:225px;left:50%;margin-left:-40px;width:80px;height:210px;background:linear-gradient(180deg,#f6efdd,#e8dcc0);border:3px solid #ff5a3c;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;animation:ringPulse 1.1s ease-in-out infinite;transform:rotate(2deg);z-index:2">
+      <div style="width:26px;height:26px;background:#b3261e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#f6efdd;font-size:14px;font-family:'Shippori Mincho B1',serif">封</div>
+      <div style="writing-mode:vertical-rl;font-family:'Shippori Mincho B1',serif;font-weight:800;font-size:38px;color:#b3261e;letter-spacing:8px">愚痴</div>
+      <div style="width:52px;height:5px;background:#3a2f2a;border-radius:3px"><div style="width:55%;height:100%;background:#ff5a3c;border-radius:3px"></div></div>
+    </div>
+    <div style="position:absolute;top:190px;left:50%;margin-left:-70px;width:140px;height:270px;background:radial-gradient(ellipse at 50% 40%,rgba(255,90,60,.16),transparent 70%);z-index:1"></div>
+    <div style="--r:-4deg;position:absolute;top:250px;left:16px;width:66px;height:176px;background:linear-gradient(180deg,#20183a,#171130);border:1px solid rgba(180,140,255,.4);border-radius:4px;display:flex;align-items:center;justify-content:center;animation:floatY 3.8s ease-in-out infinite .3s;box-shadow:0 0 14px rgba(140,90,220,.25)"><div style="writing-mode:vertical-rl;color:rgba(200,170,255,.5);font-family:'Shippori Mincho B1',serif;font-size:15px;letter-spacing:4px">南無阿弥陀佛</div></div>
+    <div style="--r:7deg;position:absolute;top:262px;right:20px;width:66px;height:176px;background:linear-gradient(180deg,#20183a,#171130);border:1px solid rgba(180,140,255,.4);border-radius:4px;display:flex;align-items:center;justify-content:center;animation:floatY 4.4s ease-in-out infinite 1s;box-shadow:0 0 14px rgba(140,90,220,.25)"><div style="writing-mode:vertical-rl;color:rgba(200,170,255,.5);font-family:'Shippori Mincho B1',serif;font-size:15px;letter-spacing:4px">南無阿弥陀佛</div></div>
+    <div style="--r:-3deg;position:absolute;top:52px;left:50%;margin-left:-33px;width:66px;height:150px;background:linear-gradient(180deg,#141024,#0e0a1c);border:1px solid rgba(180,140,255,.2);border-radius:4px;display:flex;align-items:center;justify-content:center;animation:floatY 3.9s ease-in-out infinite .8s;opacity:.5"><div style="font-size:10px;color:#8fd7a0;font-family:'DotGothic16',monospace">浄化済</div></div>
+    <div style="position:absolute;left:50%;bottom:0;width:2px;height:120px;background:linear-gradient(to top,rgba(232,198,90,0),rgba(232,198,90,.8));transform:translateX(-50%)"></div>
+  </div>
+  <div style="position:relative;display:flex;align-items:center;justify-content:center;gap:22px;padding:10px 20px 26px">
+    <div style="width:64px;height:84px;background:repeating-conic-gradient(#241c30 0 25%,#1d1628 0 50%);background-size:8px 8px;border:1px dashed #667;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#99a;text-align:center;font-family:'DotGothic16',monospace">僧侶<br>スプライト</div>
+    <div style="width:190px;height:70px;background:linear-gradient(180deg,#2a2140,#1b1530);border:2px solid #b98de0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(185,141,224,.35)">
+      <div style="font-size:22px;font-weight:800;color:#e0c9ff;letter-spacing:8px">読 経</div>
+      <div style="font-size:9px;color:#a98fc9;font-family:'DotGothic16',monospace">照準：愚痴</div>
+    </div>
+  </div>
+</div>
+</div>
+<div style="max-width:390px;font-size:11px;line-height:1.7;color:rgba(255,255,255,.55)">「南無阿弥陀佛」の霊符が闇に漂い、反転すると封印が解けて煩悩の言葉が浮かぶ。紫×金の幽玄トーンで第一弾のプレイ画面（紺の夜空）と地続き。緊張感・雰囲気重視の案。</div>
+</div>
+
+</div>
+<p class="dv-next">次の指示例：「<a class="dv-oid" href="#1a">1a</a>をプロトタイプ化して」・「<a class="dv-oid" href="#1b">1b</a>の木魚を<a class="dv-oid" href="#1a">1a</a>の札に差し替えて」・「別の3案も見たい」</p>
+</section>
+
+</x-dc>
+</body>
+</html>
