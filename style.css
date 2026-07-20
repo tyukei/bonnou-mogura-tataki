@@ -5,13 +5,18 @@
 
 * { box-sizing: border-box; }
 
+html, body { height: 100%; }
+
 body {
   margin: 0;
   background: #000;
   font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   display: flex;
   justify-content: center;
+  align-items: center;
   min-height: 100vh;
+  /* stage を transform で縮小して画面に収めるため、はみ出しは隠す(スクロール不要) */
+  overflow: hidden;
 }
 
 a { color: #e8c65a; }
@@ -24,8 +29,10 @@ a:hover { color: #f5da7a; }
   height: 800px;
   background: radial-gradient(ellipse at 50% -10%, #1b1f3d 0%, #0d0f22 55%, #070812 100%);
   overflow: hidden;
-  margin: 12px 0;
   border-radius: 8px;
+  /* 画面サイズに応じて JS が scale() を設定。中央基準で縮小 */
+  transform-origin: center center;
+  flex: 0 0 auto;
 }
 
 .starfield {
@@ -307,6 +314,63 @@ a:hover { color: #f5da7a; }
 }
 .aim-label.aiming { font-weight: 700; }
 .aim-label.aiming-bonno { color: #8a1a10; }
+
+/* --- タッチモード用ヒント(読経ボタンの代わりに表示) --- */
+.touch-hint {
+  width: 190px; height: 70px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(232,198,90,.6);
+  border-radius: 16px;
+  color: #e8c65a;
+  font-family: 'DotGothic16', monospace;
+}
+.th-title { font-size: 18px; font-weight: 700; letter-spacing: 4px; }
+.th-sub { font-size: 10px; color: #b7a35a; margin-top: 4px; }
+
+/* タッチモード時: 読経ボタンを隠し、ヒントを表示 */
+#stage.touch-mode .shoot-btn { display: none; }
+#stage.touch-mode .touch-hint { display: flex; }
+/* タッチモード時: 伏せ札(めくる)も照準中の札(読経)もタップ可能 */
+#stage.touch-mode .cell { cursor: pointer; }
+
+/* --- スタート画面: 操作モード選択 --- */
+.mode-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.mode-picker-label {
+  font-size: 11px;
+  color: #9aa;
+  font-family: 'DotGothic16', monospace;
+  letter-spacing: 2px;
+}
+.seg {
+  display: flex;
+  border: 1px solid rgba(232,198,90,.5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.seg-btn {
+  min-width: 96px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  color: #b7a35a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.seg-btn + .seg-btn { border-left: 1px solid rgba(232,198,90,.5); }
+.seg-btn.is-on {
+  background: linear-gradient(180deg, #e8c65a, #c9a53a);
+  color: #3a2f0e;
+}
 
 /* --- 被弾演出 --- */
 .attack-wrap {

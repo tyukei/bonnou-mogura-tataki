@@ -60,6 +60,7 @@
     bingoLines: [], // 演出済みビンゴライン(LINESのindex)
     dmgSeq: 0,
     muted: false,
+    touchMode: false, // true: めくれた札を直接タップして読経 / false: 読経ボタン操作
   };
 
   let timers = [];
@@ -195,17 +196,19 @@
     });
     render();
     ac(); startBgm(); sfx('bell');
-    after(800, flipNext);
+    // タッチモードはプレイヤーが伏せ札をタップしてめくる。自動モードのみ自動でめくる。
+    if (!state.touchMode) after(800, flipNext);
   }
 
-  function flipNext() {
+  // 指定した伏せ札を1枚めくる(単語は見せるが正体=色は伏せたまま)。
+  // 判定中の札があるときは何もしない(同時に判定できるのは1枚)。
+  function flipCard(id) {
     if (state.phase !== 'playing') return;
-    const downs = state.cards.filter(c => c.st === 'down');
-    if (!downs.length) return; // 全マスめくり終わり(判定は各resolveで終了処理)
-    const pick = downs[Math.floor(Math.random() * downs.length)];
+    const pick = state.cards[id];
+    if (!pick || pick.st !== 'down' || pick.resolved) return;
+    if (state.cards.some(c => c.st === 'up' && !c.resolved)) return;
     upTok += 1;
-    const tok = upTok, id = pick.id, dur = faceMs();
-    // めくる:単語は見せるが正体(色)は伏せたまま
+    const tok = upTok, dur = faceMs();
     setCard(id, { st: 'up', revealed: false, timerOn: false, tok });
     sfx('flip');
     // 50ms後にタイマー開始(width 100%→0% のトランジションを発火)
@@ -220,6 +223,15 @@
         resolve(id, false); // fired = false(見送り)
       }
     });
+  }
+
+  // 自動モード用:伏せ札からランダムに1枚めくる
+  function flipNext() {
+    if (state.phase !== 'playing') return;
+    const downs = state.cards.filter(c => c.st === 'down');
+    if (!downs.length) return; // 全マスめくり終わり(判定は各resolveで終了処理)
+    const pick = downs[Math.floor(Math.random() * downs.length)];
+    flipCard(pick.id);
   }
 
   // マス判定。fired: プレイヤーが読経を撃ったか
@@ -296,7 +308,8 @@
       sfx(state.phase === 'clear' ? 'clear' : 'over');
       return;
     }
-    after(450 + Math.random() * 350, flipNext);
+    // タッチモードは次の札もプレイヤーが選ぶ。自動モードのみ次を自動でめくる。
+    if (!state.touchMode) after(450 + Math.random() * 350, flipNext);
   }
 
   function damage(amount, word, sub, kind) {
@@ -329,6 +342,27 @@
     resolve(up.id, true);
   }
 
+  // タッチモード:
+  //  ・判定中の札(光る札)がある → その札をタップ = 読経(放置すれば見送り)
+  //  ・判定中の札が無い           → 伏せ札をタップ = めくる位置をプレイヤーが選ぶ
+  function tapCard(id) {
+    if (!state.touchMode || state.phase !== 'playing') return;
+    const c = state.cards[id];
+    if (!c || c.resolved) return;
+    const active = state.cards.find(x => x.st === 'up' && !x.resolved);
+    if (active) {
+      if (active.id === id) shoot(); // 光る札をタップ = 読経
+      // 他の札のタップは無視(同時に判定できるのは1枚)
+    } else if (c.st === 'down') {
+      flipCard(id); // 伏せ札をめくる
+    }
+  }
+
+  function setTouchMode(on) {
+    state.touchMode = !!on;
+    if (el.stage) el.stage.classList.toggle('touch-mode', state.touchMode);
+  }
+
   function toggleMute() { state.muted = !state.muted; render(); }
 
   // ======================================================================
@@ -357,6 +391,7 @@
         <div class="card-timer"><div class="card-timer-fill"></div></div>
         <div class="card-mark"></div>
         <div class="card-purify">浄</div>`;
+      cell.addEventListener('click', () => tapCard(i));
       board.appendChild(cell);
       cardEls.push({
         cell,
@@ -451,6 +486,12 @@
     el.aimLabel.textContent = upCard ? '照準：' + upCard.word : '照準：ーー';
     el.aimLabel.className = 'aim-label' + (upCard ? ' aiming' : '');
 
+    // タッチモードの操作ヒント(状況で文言を切替)
+    if (s.touchMode && el.thTitle) {
+      el.thTitle.textContent = upCard ? '光る札に読経' : '伏せ札をめくる';
+      el.thSub.textContent = upCard ? 'タップで読経' : 'タップして選ぶ';
+    }
+
     // 揺れ
     el.shake.className = 'shake' + (s.dmgSeq ? (s.dmgSeq % 2 ? ' a' : ' b') : '');
 
@@ -488,13 +529,24 @@
   // ======================================================================
   //  初期化
   // ======================================================================
+  // ステージ(設計上 390x800 固定)を、内部座標を保ったまま画面に収まるよう縮小する。
+  // 全ての座標計算(geo/beam/bless 等)は 390x800 前提のため、CSS transform で拡縮するのが安全。
+  const STAGE_W = 390, STAGE_H = 800;
+  function fitStage() {
+    if (!el.stage) return;
+    const scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H, 1);
+    el.stage.style.transform = `scale(${scale})`;
+  }
+
   function init() {
-    const ids = ['hpFill', 'mpFill', 'bingoNum', 'goalNum', 'chainNum', 'muteBtn',
+    const ids = ['stage', 'hpFill', 'mpFill', 'bingoNum', 'goalNum', 'chainNum', 'muteBtn',
       'beam', 'bless', 'bingoFx', 'aimLabel', 'shake', 'attackWrap', 'attackWord', 'attackSub',
       'vignette', 'startScreen', 'clearScreen', 'overScreen',
       'clearGoal', 'clearGoal2', 'clearPurified', 'clearMaxChain', 'clearHp',
       'overGoal', 'overPurified', 'overMaxChain', 'startBtn', 'shootBtn', 'versionTag'];
     ids.forEach(id => { el[id] = document.getElementById(id); });
+    el.thTitle = document.querySelector('#touchHint .th-title');
+    el.thSub = document.querySelector('#touchHint .th-sub');
 
     // バージョン表示(デプロイ毎に CI が置換。未置換ならローカル扱いで dev)
     if (el.versionTag) {
@@ -509,6 +561,14 @@
     el.muteBtn.addEventListener('click', toggleMute);
     document.querySelectorAll('.restart-btn').forEach(b => b.addEventListener('click', start));
 
+    // 操作モード選択(スタート画面のセグメント切替)
+    const segBtns = document.querySelectorAll('#modeSeg .seg-btn');
+    segBtns.forEach(b => b.addEventListener('click', () => {
+      segBtns.forEach(x => x.classList.toggle('is-on', x === b));
+      setTouchMode(b.dataset.touch === '1');
+    }));
+    setTouchMode(false);
+
     // PC: Spaceキー
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
@@ -517,6 +577,10 @@
         else start();
       }
     });
+
+    fitStage();
+    window.addEventListener('resize', fitStage);
+    window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
 
     render();
   }

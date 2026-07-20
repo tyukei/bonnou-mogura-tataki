@@ -52,6 +52,10 @@
           <div class="shoot-title">読 経</div>
           <div id="aimLabel" class="aim-label">照準：ーー</div>
         </button>
+        <div id="touchHint" class="touch-hint">
+          <div class="th-title">伏せ札をめくる</div>
+          <div class="th-sub">タップして選ぶ</div>
+        </div>
       </div>
 
       <!-- 被弾演出 -->
@@ -77,6 +81,13 @@
         煩悩を撃つ・仏教語を見送る＝<b>成立(○)</b>。<br>
         成立マスが縦横斜めに揃えば<b>ビンゴ</b>。<br>
         誤ると被弾。ビンゴ<span class="c-term">3本</span>で悟りへ。
+      </div>
+      <div class="mode-picker">
+        <div class="mode-picker-label">操作方法</div>
+        <div class="seg" id="modeSeg">
+          <button type="button" class="seg-btn is-on" data-touch="0">読経ボタン</button>
+          <button type="button" class="seg-btn" data-touch="1">札をタッチ</button>
+        </div>
       </div>
       <button id="startBtn" class="big-btn" type="button">修行の開始</button>
       <div class="hint">PC: Spaceキーで読経</div>
